@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devknowledge"
+version = "0.1.0"
+description = "An open-source, local-first developer knowledge pipeline."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+    "click>=8.1.7",
+    "pytest>=7.4.3"
+]
+
+[project.scripts]
+devknowledge = "devknowledge.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]

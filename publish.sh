@@ -1,32 +1,59 @@
 #!/usr/bin/env bash
-# publish.sh - Automates data extraction and portfolio deployment
+# publish.sh - Automates data extraction and remote portfolio deployment
+# Usage: ./publish.sh <TARGET_REPO_URL> <PORTFOLIO_REPO_URL>
 
 set -e
 
-echo "Starting publish flow..."
-
-# 1. Run the dev-knowledge extraction (Replace with actual command when implemented)
-echo "Extracting knowledge (Simulated)..."
-# e.g., python3 main.py -> generates output/*.json
-
-# 2. Define paths
-DEV_KNOWLEDGE_DIR=$(pwd)
-# Assuming portfolio is a sibling directory based on your current setup
-PORTFOLIO_DIR="../portfolio" 
-
-if [ ! -d "$PORTFOLIO_DIR" ]; then
-    echo "Error: Portfolio directory not found at $PORTFOLIO_DIR"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <TARGET_REPO_URL> <PORTFOLIO_REPO_URL>"
+    echo "Example: $0 https://github.com/user/cool-app.git https://github.com/user/portfolio.git"
     exit 1
 fi
 
-# 3. Copy generated files to portfolio (Uncomment when generator is ready)
-echo "Copying data to private portfolio repository..."
-mkdir -p "$PORTFOLIO_DIR/data"
-# cp -r output/*.json "$PORTFOLIO_DIR/data/"
+TARGET_REPO_URL=$1
+PORTFOLIO_REPO_URL=$2
 
-# 4. Commit and push the portfolio repo
-echo "Pushing portfolio to trigger Vercel..."
-cd "$PORTFOLIO_DIR"
+# Extract project name from the URL
+PROJECT_NAME=$(basename "$TARGET_REPO_URL" .git)
+RANDOM_STR=$(head -c 4 /dev/urandom | xxd -p)
+TARGET_TMP_DIR="/tmp/devknowledge-target-${PROJECT_NAME}-${RANDOM_STR}"
+PORTFOLIO_TMP_DIR="/tmp/devknowledge-portfolio-${RANDOM_STR}"
+
+echo "Starting remote publish flow for $PROJECT_NAME..."
+
+# Cleanup function to run on exit
+cleanup() {
+    echo "Cleaning up temporary directories..."
+    rm -rf "$TARGET_TMP_DIR"
+    rm -rf "$PORTFOLIO_TMP_DIR"
+}
+trap cleanup EXIT
+
+# 1. Clone Target Repository (Blobless Clone for speed/memory efficiency)
+echo "Cloning target repository (Blobless clone)..."
+git clone --filter=blob:none "$TARGET_REPO_URL" "$TARGET_TMP_DIR"
+
+# 2. Run dev-knowledge extraction
+echo "Extracting knowledge..."
+DEV_KNOWLEDGE_DIR=$(pwd)
+source "$DEV_KNOWLEDGE_DIR/venv/bin/activate"
+
+# We must run analyze on the target directory
+devknowledge analyze "$TARGET_TMP_DIR"
+devknowledge publish "$TARGET_TMP_DIR"
+
+# 3. Clone Portfolio Repository (Shallow Clone for speed/memory efficiency)
+echo "Cloning portfolio repository (Shallow clone)..."
+git clone --depth 1 "$PORTFOLIO_REPO_URL" "$PORTFOLIO_TMP_DIR"
+
+# 4. Copy generated files to portfolio
+echo "Copying data to private portfolio repository..."
+mkdir -p "$PORTFOLIO_TMP_DIR/data"
+cp "$TARGET_TMP_DIR/knowledge_graph.json" "$PORTFOLIO_TMP_DIR/data/${PROJECT_NAME}_knowledge_graph.json"
+
+# 5. Commit and push the portfolio repo
+echo "Pushing portfolio to trigger remote deployment..."
+cd "$PORTFOLIO_TMP_DIR"
 
 # Stage the data folder
 git add data/
@@ -35,13 +62,12 @@ git add data/
 if git diff --cached --quiet; then
     echo "No new data changes detected. Skipping push."
 else
-    git commit -m "chore: auto-update dev-knowledge data"
+    git commit -m "chore: auto-update dev-knowledge data for $PROJECT_NAME"
     
-    # Assuming 'main' is the default branch
-    git push origin main
+    # Push to default branch (main/master)
+    git push origin HEAD
     
-    echo "Successfully pushed data to portfolio. Vercel build triggered!"
+    echo "Successfully pushed data to remote portfolio!"
 fi
 
-cd "$DEV_KNOWLEDGE_DIR"
 echo "Publish complete!"
