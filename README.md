@@ -40,7 +40,7 @@ pip install -e .
 
 ## Usage
 
-### 🚀 Recommended: The Automated Remote Workflow
+### Recommended: The Automated Remote Workflow
 
 The most powerful way to use `dev-knowledge` is via the automated `publish.sh` script. This script handles the end-to-end pipeline: it temporarily clones your target repository using memory-optimized Git protocols, runs the analysis, generates the graph, and automatically pushes the result directly to your remote portfolio repository.
 
