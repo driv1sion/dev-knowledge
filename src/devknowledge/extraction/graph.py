@@ -27,7 +27,7 @@ def generate_knowledge_graph(db_path: str, output_path: str):
             evidence_list = []
             ev_cursor = conn.cursor()
             ev_cursor.execute("""
-                SELECT e.source_type, e.source_reference, e.confidence 
+                SELECT e.source_type, e.source_reference, e.confidence, e.extracted_value 
                 FROM evidence e
                 JOIN capability_evidence ce ON e.id = ce.evidence_id
                 WHERE ce.capability_id = ?
@@ -37,7 +37,8 @@ def generate_knowledge_graph(db_path: str, output_path: str):
                 evidence_list.append({
                     "type": ev_row[0],
                     "reference": ev_row[1],
-                    "confidence": ev_row[2]
+                    "confidence": ev_row[2],
+                    "value": ev_row[3]
                 })
                 
             graph["capabilities"].append({

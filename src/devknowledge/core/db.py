@@ -91,6 +91,30 @@ class DBManager:
             )
             conn.commit()
 
+    def clear_capability_evidence(self, capability_id: str):
+        """Removes existing evidence links for a capability so they can be overwritten."""
+        with self._get_conn() as conn:
+            conn.execute(
+                "DELETE FROM capability_evidence WHERE capability_id = ?",
+                (capability_id,)
+            )
+            conn.commit()
+
+    def get_evidence_value(self, capability_name: str) -> str:
+        """Retrieves the latest extracted value for a given capability name."""
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT e.extracted_value 
+                FROM evidence e
+                JOIN capability_evidence ce ON e.id = ce.evidence_id
+                JOIN capabilities c ON c.id = ce.capability_id
+                WHERE c.name = ?
+                ORDER BY e.id DESC LIMIT 1
+            """, (capability_name,))
+            row = cursor.fetchone()
+            return row[0] if row else None
+
     def has_capability(self, name: str) -> bool:
         with self._get_conn() as conn:
             cursor = conn.cursor()

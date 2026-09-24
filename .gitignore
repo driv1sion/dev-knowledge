@@ -45,3 +45,4 @@ share/python-wheels/
 # dev-knowledge specific local artifacts (in case run locally)
 knowledge.db
 knowledge_graph.json
+.env

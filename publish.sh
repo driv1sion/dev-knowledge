@@ -46,10 +46,11 @@ devknowledge publish "$TARGET_TMP_DIR"
 echo "Cloning portfolio repository (Shallow clone)..."
 git clone --depth 1 "$PORTFOLIO_REPO_URL" "$PORTFOLIO_TMP_DIR"
 
-# 4. Copy generated files to portfolio
-echo "Copying data to private portfolio repository..."
+# 4. Copy generated files to portfolio and update projects index
+echo "Copying data to private portfolio repository and updating index..."
 mkdir -p "$PORTFOLIO_TMP_DIR/data"
 cp "$TARGET_TMP_DIR/knowledge_graph.json" "$PORTFOLIO_TMP_DIR/data/${PROJECT_NAME}_knowledge_graph.json"
+devknowledge update-portfolio "$PORTFOLIO_TMP_DIR/data" "$PROJECT_NAME" "$TARGET_TMP_DIR/knowledge_graph.json"
 
 # 5. Commit and push the portfolio repo
 echo "Pushing portfolio to trigger remote deployment..."
