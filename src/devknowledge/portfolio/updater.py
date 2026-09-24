@@ -84,8 +84,6 @@ def update_portfolio_projects(portfolio_data_dir: str, project_name: str, knowle
         elif name == "Impact: Result":
             result = value
             
-    project_id = f"proj-{project_name}"
-    
     # 2. Load existing projects
     projects = []
     if os.path.exists(projects_file):
@@ -96,27 +94,37 @@ def update_portfolio_projects(portfolio_data_dir: str, project_name: str, knowle
                 projects = []
                 
     # Sort existing projects by order to ensure we have a clean list
-    # If order is missing, we append them at the end.
     for i, p in enumerate(projects):
         if "order" not in p:
             p["order"] = i + 1
             
     projects.sort(key=lambda x: x.get("order", float('inf')))
     
-    # 3. Check if project already exists
+    # 3. Match project by Github URL repo name or ID
     existing_idx = -1
+    project_id = project_name.lower() # Default ID for new projects
+    
     for i, p in enumerate(projects):
-        if p.get("id") == project_id:
+        p_github = p.get("githubUrl", "")
+        url_match = re.search(r'github\.com[:/][^/]+/([^/.]+)', p_github)
+        if url_match and url_match.group(1).lower() == project_name.lower():
             existing_idx = i
+            project_id = p.get("id")
+            break
+        elif p.get("id", "").lower() == project_name.lower() or p.get("id", "").lower() == f"proj-{project_name.lower()}":
+            existing_idx = i
+            project_id = p.get("id")
             break
             
     if existing_idx != -1:
         # Continuous Update: update fields, keep existing order
         p = projects[existing_idx]
-        p["techStack"] = list(set(p.get("techStack", []) + tech_stack))
-        p["features"] = list(set(p.get("features", []) + features))
-        if description != "Automatically extracted from dev-knowledge.":
-            p["description"] = description
+        
+        # Don't overwrite description and features with bad inference
+        # p["techStack"] = list(set(p.get("techStack", []) + tech_stack))
+        # p["features"] = list(set(p.get("features", []) + features))
+        # if description != "Automatically extracted from dev-knowledge.":
+        #     p["description"] = description
         if rationale:
             if "architectureDiagram" not in p:
                 p["architectureDiagram"] = {"nodes": [], "edges": []}

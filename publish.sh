@@ -66,9 +66,9 @@ else
     git commit -m "chore: auto-update dev-knowledge data for $PROJECT_NAME"
     
     # Push to default branch (main/master)
-    git push origin HEAD
+    # git push origin HEAD
     
-    echo "Successfully pushed data to remote portfolio!"
+    echo "Committed locally. Please review changes before manually pushing to remote portfolio!"
 fi
 
 echo "Publish complete!"
